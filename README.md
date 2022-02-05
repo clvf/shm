@@ -8,42 +8,27 @@ manager".
 $ shm add network/lsof
 
 $ shm
-home/${USER}/.shm
-└── network
-    └── lsof
+    home/${USER}/.shm
+    └── network
+        └── lsof
 
 $ shm network/lsof
-Open Files by User
-=====================
 
-lsof -u $username
-lsof -i -u $username
+    Open Network Files by User
+    ===========================
 
-Exclude Specific User (with '^')
---------------------------------
-lsof -i -u^root
+    lsof -i -u $username
 
-Process On a Specific Port
-============================
-
-lsof -i TCP:9999
-
-Open Files For Port Ranges
-----------------------------
-
-lsof -i TCP:9000-10000
-
-Kill All Processes of User
-===========================
-
-kill $(lsof -t -u $username)
+    Exclude Specific User (with '^')
+    --------------------------------
+    lsof -i -u^root
 
 $ shm add web/curl
 
 $ shm
-home/${USER}/.shm
-├── network
-│   └── lsof
-└── web
-    └── curl
+    home/${USER}/.shm
+    ├── network
+    │   └── lsof
+    └── web
+        └── curl
 ```
