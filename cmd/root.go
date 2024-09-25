@@ -1,22 +1,17 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
-	"strings"
-	"syscall"
 
-	"github.com/charmbracelet/glamour"
 	"github.com/urfave/cli/v2"
 )
 
 const _BASEDIR string = ".shm" // the basename of the repository (see shm_repo)
-const COLOR_RESET = "\033[0m"
-const COLOR_BLUE = "\033[34m"
+const _COLOR_RESET = "\033[0m"
+const _COLOR_BLUE = "\033[34m"
 const _DEFAULTWIDTH = 120
 
 var _APP *cli.App
@@ -53,7 +48,7 @@ func init() {
 	_APP = &cli.App{
 		Name:                   "shm",
 		Usage:                  "SHow Me - manage code snippets and command recipes as a directory tee.",
-		Action:                 show_or_list,
+		Action:                 show,
 		ArgsUsage:              "[FILE]",
 		Description:            "Show the snippet designated by FILE in the repository or if no arguments given print the repository's content",
 		UseShortOptionHandling: true,
@@ -107,139 +102,6 @@ func init() {
 			},
 		},
 	}
-}
-
-func show_or_list(cCtx *cli.Context) error {
-	if !cCtx.Args().Present() {
-		printRepo()
-		return nil
-	}
-
-	file, err := filepath.Abs(filepath.Join(_REPO, cCtx.Args().First()))
-	check(err)
-
-	content, err := os.ReadFile(file)
-	check(err)
-
-	if !_MONOCHROME {
-		style := "tokyo-night"
-		if override := os.Getenv("GLAMOUR_STYLE"); override != "" {
-			style = override
-		}
-
-		r, err := glamour.NewTermRenderer(
-			glamour.WithStandardStyle(style),
-			glamour.WithWordWrap(_DEFAULTWIDTH),
-		)
-		check(err)
-
-		out, err := r.Render(string(content))
-		check(err)
-
-		fmt.Println(out)
-	} else {
-		os.Stdout.Write(content)
-	}
-
-	return nil
-}
-
-func printRepo() {
-	fmt.Println(_REPO)
-
-	var sb strings.Builder
-	walkDir(&sb, _REPO, "")
-	fmt.Print(sb.String())
-}
-
-func walkDir(sb_ptr *strings.Builder, root string, linePrefix string) {
-	files, err := os.ReadDir(root)
-	check(err)
-
-	fileNum := len(files)
-	for i, file := range files {
-		filePrefix := "\u2514\u2500 " // "|- "
-
-		if i < fileNum-1 {
-			filePrefix = "\u251c\u2500 " // "`- "
-		}
-
-		if file.IsDir() && !_MONOCHROME {
-			fmt.Fprintf(sb_ptr, "%v%v%v%v%v\n", linePrefix, filePrefix, COLOR_BLUE, file.Name(), COLOR_RESET)
-		} else {
-			fmt.Fprintf(sb_ptr, "%v%v%v\n", linePrefix, filePrefix, file.Name())
-		}
-
-		if file.IsDir() {
-			nextLinePrefix := linePrefix + "   "
-			if i < fileNum-1 {
-				nextLinePrefix = linePrefix + "\u2502  " // "|  "
-			}
-
-			walkDir(sb_ptr, filepath.Join(root, file.Name()), nextLinePrefix)
-		}
-	}
-}
-
-func add(cCtx *cli.Context) error {
-	if cCtx.Args().Present() != true {
-		return cli.Exit("At least one positional argument is required!", 1)
-	}
-
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		return cli.Exit("EDITOR environment variable must be set!", 1)
-	}
-
-	file, err := filepath.Abs(filepath.Join(_REPO, cCtx.Args().First()))
-	check(err)
-
-	dirname := filepath.Dir(file)
-	err = os.MkdirAll(dirname, 0750)
-	check(err)
-
-	binary, err := exec.LookPath(editor)
-	check(err)
-
-	env := os.Environ()
-	args := []string{editor, file}
-
-	err = syscall.Exec(binary, args, env)
-	check(err)
-
-	return nil
-}
-
-func rm(cCtx *cli.Context) error {
-	if cCtx.Args().Present() != true {
-		return cli.Exit("At least one positional argument is required!", 1)
-	}
-
-	file, err := filepath.Abs(filepath.Join(_REPO, cCtx.Args().First()))
-	check(err)
-
-	err = os.Remove(file)
-	check(err)
-
-	return nil
-}
-
-func search(cCtx *cli.Context) error {
-	if cCtx.Args().Present() != true {
-		return cli.Exit("At least one positional argument is required!", 1)
-	}
-	pattern := cCtx.Args().First()
-
-	if filepath.IsAbs(pattern) == false {
-		pattern = filepath.Join(_REPO, pattern)
-	}
-
-	matches, err := filepath.Glob(pattern)
-	check(err)
-
-	fmt.Println("%v", matches)
-
-	return nil
 }
 
 func Run() {

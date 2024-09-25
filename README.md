@@ -4,7 +4,7 @@ SHow Me (`shm`) is a small unix command line utility to manage recipes and
 knowledge base articles inspired by Pass, "the standard unix password
 manager".
 
-```
+```sh
 $ shm add network/lsof
 
 $ shm
@@ -31,4 +31,60 @@ $ shm
     │   └── lsof
     └── web
         └── curl
+```
+
+***
+
+Mind you the whole Go code is equivalent with this simple and short shell
+script:
+
+```sh
+#!/bin/env bash
+
+set -e
+
+: ${SHM_STORE:=~/.shm}
+: ${EDITOR:=vi}
+
+if which tree >/dev/null 2>&1;
+then
+    LIST="tree --noreport --prune --"
+else
+    LIST=find
+fi
+
+if which pygmentize >/dev/null 2>&1 && pygmentize -l md </dev/null >/dev/null 2>&1;
+then
+    CAT="pygmentize -l md"
+else
+    CAT=cat
+fi
+
+if [[ -z "${1}" ]];
+then
+    mkdir -p ${SHM_STORE}
+    ${LIST} ${SHM_STORE}
+    echo
+    exit
+fi
+
+case ${1} in
+    "add" | "edit" ) 
+        mkdir -p $(dirname ${SHM_STORE}/${2})
+        ${EDITOR} ${SHM_STORE}/${2}
+        ;;
+    "search" | "find" )
+        find ${SHM_STORE} -name "*${2}*"
+        ;;
+    "rm" ) 
+        rm ${SHM_STORE}/${2}
+        ;;
+    "mv" )
+        mv ${SHM_STORE}/${2} ${SHM_STORE}/${3}
+        ;;
+    "cp" )
+        cp ${SHM_STORE}/${2} ${SHM_STORE}/${3}
+        ;;
+    *) ${CAT} ${SHM_STORE}/${1};;
+esac
 ```
