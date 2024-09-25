@@ -12,7 +12,8 @@ import (
 const _BASEDIR string = ".shm" // the basename of the repository (see shm_repo)
 const _COLOR_RESET = "\033[0m"
 const _COLOR_BLUE = "\033[34m"
-const _DEFAULTWIDTH = 120
+const _DEFAULT_WIDTH = 120
+const _DEFAULT_STYLE = "tokyo-night"
 
 var _APP *cli.App
 var _REPO string // the directory where the snippets (files) are stored
@@ -40,6 +41,18 @@ func getRepoPath() string {
 	log.Println("Cannot find your HOME directory. Fallback dir: %q", repoPath)
 
 	return repoPath
+}
+
+// Ensure that there's a positional parameter and return it with it's absolute path.
+func getFirstPos(cCtx *cli.Context) (string, error) {
+	if cCtx.Args().Present() != true {
+		return "", cli.Exit("At least one positional argument is required!", 1)
+	}
+
+	abspath, err := filepath.Abs(filepath.Join(_REPO, cCtx.Args().First()))
+	check(err)
+
+	return abspath, nil
 }
 
 func init() {
@@ -74,7 +87,7 @@ func init() {
 				Aliases: []string{"l"},
 				Usage:   "Print the contents of the repository",
 				Action: func(cCtx *cli.Context) error {
-					printRepo()
+					printRepo(_REPO)
 					return nil
 				},
 			},
