@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/user"
@@ -55,6 +57,35 @@ func getFirstPos(cCtx *cli.Context) (string, error) {
 	return abspath, nil
 }
 
+func bashCompleteWalkDirFunc(path string, d fs.DirEntry, err error) error {
+	if err != nil {
+		return err
+	}
+
+	// _REPO itself doesn't need to be printed
+	if path == _REPO {
+		return nil
+	}
+
+	rel, err := filepath.Rel(_REPO, path)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(rel)
+	return nil
+}
+
+func bashComplete(cCtx *cli.Context) {
+	if cCtx.NArg() > 0 {
+		return
+	}
+
+	err := filepath.WalkDir(_REPO, bashCompleteWalkDirFunc)
+	check(err)
+
+	return
+}
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -65,6 +96,8 @@ func init() {
 		ArgsUsage:              "[FILE]",
 		Description:            "Show the snippet designated by FILE in the repository or if no arguments given print the repository's content",
 		UseShortOptionHandling: true,
+		EnableBashCompletion:   true,
+		BashComplete:           bashComplete,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "repository",
@@ -90,28 +123,31 @@ func init() {
 					printRepo(_REPO)
 					return nil
 				},
+				BashComplete: bashComplete,
 			},
 			{
-				Name:        "add",
-				Aliases:     []string{"a", "e", "edit"},
-				Usage:       "Add a new recipe",
-				Description: "Open $EDITOR and add a new recipe in form of FILE under repository.",
-				ArgsUsage:   "FILE",
-				Action:      add,
+				Name:         "add",
+				Aliases:      []string{"a", "e", "edit"},
+				Usage:        "Add a new recipe",
+				Description:  "Open $EDITOR and add a new recipe in form of FILE under repository.",
+				ArgsUsage:    "FILE",
+				Action:       add,
+				BashComplete: bashComplete,
 			},
 			{
 				Name:        "search",
-				Aliases:     []string{"s", "f", "find"},
+				Aliases:     []string{"s"},
 				Usage:       "Search for a recipe",
 				Description: "Print files in the repository directory that match the glob in params.",
 				ArgsUsage:   "GLOB",
 				Action:      search},
 			{
-				Name:        "rm",
-				Usage:       "Delete a recipe",
-				Description: "Delete the file from the repository directory",
-				ArgsUsage:   "FILE",
-				Action:      rm,
+				Name:         "rm",
+				Usage:        "Delete a recipe",
+				Description:  "Delete the file from the repository directory",
+				ArgsUsage:    "FILE",
+				Action:       rm,
+				BashComplete: bashComplete,
 			},
 		},
 	}
