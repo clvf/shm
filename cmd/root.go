@@ -17,6 +17,7 @@ import (
 const _BASEDIR string = ".shm" // the basename of the repository (see shm_repo)
 const COLOR_RESET = "\033[0m"
 const COLOR_BLUE = "\033[34m"
+const _DEFAULTWIDTH = 120
 
 var _APP *cli.App
 var _REPO string // the directory where the snippets (files) are stored
@@ -121,15 +122,21 @@ func show_or_list(cCtx *cli.Context) error {
 	check(err)
 
 	if !_MONOCHROME {
+		style := "tokyo-night"
+		if override := os.Getenv("GLAMOUR_STYLE"); override != "" {
+			style = override
+		}
+
 		r, err := glamour.NewTermRenderer(
-			glamour.WithAutoStyle(),
+			glamour.WithStandardStyle(style),
+			glamour.WithWordWrap(_DEFAULTWIDTH),
 		)
 		check(err)
 
 		out, err := r.Render(string(content))
 		check(err)
 
-		fmt.Print(out)
+		fmt.Println(out)
 	} else {
 		os.Stdout.Write(content)
 	}
