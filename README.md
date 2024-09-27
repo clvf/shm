@@ -33,10 +33,27 @@ $ shm
         └── curl
 ```
 
+#### Shell Completion
+
+If you wanted to have shell completion then download the appropriate completion
+file from the [urfave/cli](https://github.com/urfave/cli/tree/main/autocomplete "urfave/cli v2")
+repo and copy it to `~/local/share/bash-completion/completions/shm`.
+
+Eg.:
+
+```sh
+# alternatively you can clone the repo https://github.com/urfave/cli.git
+$ wget https://raw.githubusercontent.com/urfave/cli/refs/heads/main/autocomplete/bash_autocomplete
+
+$ mkdir -p ~/local/share/bash-completion/completions
+$ mv bash_autocomplete ~/local/share/bash-completion/completions/shm
+```
+
 ***
 
 Mind you the whole Go code is equivalent with this simple and short shell
-script:
+script. In fact this is the code tagged by `LAST_SHELL_VERSION` in the
+git history.
 
 ```sh
 #!/bin/env bash
@@ -53,7 +70,8 @@ else
     LIST=find
 fi
 
-if which pygmentize >/dev/null 2>&1 && pygmentize -l md </dev/null >/dev/null 2>&1;
+if which pygmentize >/dev/null 2>&1 \
+   && pygmentize -l md </dev/null >/dev/null 2>&1;
 then
     CAT="pygmentize -l md"
 else
