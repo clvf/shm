@@ -3,12 +3,16 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/charmbracelet/glamour"
+	shellwords "github.com/mattn/go-shellwords"
 	"github.com/muesli/termenv"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
 )
 
 func show(cCtx *cli.Context) error {
@@ -30,25 +34,64 @@ func show(cCtx *cli.Context) error {
 	content, err := os.ReadFile(file)
 	check(err)
 
-	if _MONOCHROME {
+	stdoutFd := int(os.Stdout.Fd())
+
+	if !term.IsTerminal(stdoutFd) {
 		os.Stdout.Write(content)
 		return nil
 	}
 
-	style := _DEFAULT_STYLE
-	if override := os.Getenv("GLAMOUR_STYLE"); override != "" {
-		style = override
+	termWidth, termHeight, err := term.GetSize(stdoutFd)
+	check(err)
+
+	out := string(content)
+
+	if !_MONOCHROME {
+		style := _DEFAULT_STYLE
+		if override := os.Getenv("GLAMOUR_STYLE"); override != "" {
+			style = override
+		}
+
+		r, err := glamour.NewTermRenderer(
+			glamour.WithStandardStyle(style),
+			glamour.WithWordWrap(termWidth),
+			glamour.WithColorProfile(termenv.TrueColor),
+		)
+		check(err)
+
+		out, err = r.Render(string(content))
+		check(err)
 	}
 
-	r, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle(style),
-		glamour.WithWordWrap(_DEFAULT_WIDTH),
-		glamour.WithColorProfile(termenv.TrueColor),
-	)
-	check(err)
+	lineCnt := strings.Count(out, "\n")
 
-	out, err := r.Render(string(content))
-	check(err)
+	if termHeight <= lineCnt {
+		pager := os.Getenv("PAGER")
+		if pager == "" {
+			pager = "/bin/less -iR"
+		}
+
+		penv, args, err := shellwords.ParseWithEnvs(pager)
+
+		binary, err := exec.LookPath(args[0])
+		check(err)
+
+		f, err := os.CreateTemp("", "shm.*.txt")
+		check(err)
+		// NOTE: no defer (remove) as we're exec'ing into "pager" so it
+		//       wouldn't be called anyway.
+
+		_, err = f.Write([]byte(out))
+		check(err)
+
+		err = f.Close()
+		check(err)
+
+		env := append(os.Environ(), penv...)
+		args = append(args, f.Name())
+
+		syscall.Exec(binary, args, env)
+	}
 
 	fmt.Println(out)
 	return nil

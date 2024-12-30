@@ -4,8 +4,10 @@ go 1.22.2
 
 require (
 	github.com/charmbracelet/glamour v0.8.0
+	github.com/mattn/go-shellwords v1.0.12
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
 	github.com/urfave/cli/v2 v2.27.4
+	golang.org/x/term v0.22.0
 )
 
 require (
@@ -29,5 +31,4 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.3 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/term v0.22.0 // indirect
 )
