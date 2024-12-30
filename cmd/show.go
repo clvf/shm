@@ -54,7 +54,7 @@ func show(cCtx *cli.Context) error {
 
 		r, err := glamour.NewTermRenderer(
 			glamour.WithStandardStyle(style),
-			glamour.WithWordWrap(termWidth),
+			glamour.WithWordWrap(termWidth-4),
 			glamour.WithColorProfile(termenv.TrueColor),
 		)
 		check(err)
